@@ -1,0 +1,23 @@
+[project]
+name = "air.traffic.trends-CO"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "", email = ""},
+]
+dependencies = [
+    "requests>=2.31.0",
+    "beautifulsoup4>=4.12.3",
+    "ipykernel>=6.29.4",
+    "tqdm>=4.66.4",
+    "pandas>=2.2.2",
+    "polars>=0.20.23",
+    "openpyxl>=3.1.2",
+]
+requires-python = "==3.12.*"
+readme = "README.md"
+license = {text = "MIT"}
+
+
+[tool.pdm]
+distribution = false
