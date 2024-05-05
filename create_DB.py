@@ -24,7 +24,7 @@ delete_table_query = "DROP TABLE IF EXISTS flights;"
 # SQL to create a table with the specified schema
 create_table_query = '''
 CREATE TABLE IF NOT EXISTS flights (
-    Fecha TEXT,
+    Fecha DATE,
     Sigla_empresa TEXT,
     Nombre_empresa TEXT,
     Origen TEXT,

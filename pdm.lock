@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:324e713c0949181a4e243489efcac5deff452cbd44bcaf37ae2fad5e1f30a529"
+content_hash = "sha256:9b78e1a900c99d3614d85a1cfbb6e16211ed4f06d453bf23c409716ceb98578f"
 
 [[package]]
 name = "altair"
@@ -549,6 +549,15 @@ groups = ["default"]
 files = [
     {file = "mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8"},
     {file = "mdurl-0.1.2.tar.gz", hash = "sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba"},
+]
+
+[[package]]
+name = "millify"
+version = "0.1.1"
+summary = "Convert long numbers into a human-readable format in Python"
+groups = ["default"]
+files = [
+    {file = "millify-0.1.1.tar.gz", hash = "sha256:619defdc98b6d23f941b5ce4aaf4bf87a0e0f64cd0446ffa299be94486597f1a"},
 ]
 
 [[package]]

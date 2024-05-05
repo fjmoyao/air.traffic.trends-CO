@@ -6,6 +6,10 @@ import os
 from dotenv import load_dotenv
 import psycopg2
 from psycopg2 import OperationalError
+from millify import millify
+import numpy as np
+import plotly.express as px
+
 load_dotenv()
 
 data_file = os.path.join(os.getcwd(),"data","silver_files")
@@ -32,40 +36,69 @@ def fetch_query(connection, query):
     except Exception as e:
         print(f"The error '{e}' occurred")
         return None
-select_query = "SELECT * FROM flights LIMIT 100;"
 
-df = fetch_query(conn, select_query)
-df["fecha"] = pd.to_datetime(df["fecha"])
-# Convert the DataFrame from pandas to polars for specific manipulations if needed
-df_pl = pl.from_pandas(df)
 
-# Sidebar for user inputs or filters
-st.sidebar.header('Filter Options')
-year = st.sidebar.selectbox('Select Year', df['fecha'].dt.year.unique())
+#Defines queries 
+#select_query = "SELECT * FROM flights LIMIT 100;"
+#df = fetch_query(conn, select_query)
 
-# Main page layout
-st.title('Flight Data Dashboard')
-st.write(df_pl.select(pl.col('fecha')))
-# Visualization 1: Flight Traffic Analysis by Destination
-st.header('Flight Traffic Analysis by Destination')
-destination_traffic = df_pl.filter(pl.col('fecha').dt.year == year).groupby('destino').agg(
-    pl.count().alias('Flight Count')
-).sort('Flight Count', reverse=True).to_pandas()
-fig1 = px.bar(destination_traffic, x='destino', y='Flight Count', title='Flight Traffic by Destination')
-st.plotly_chart(fig1)
+query_anhos = fetch_query(conn,"SELECT DISTINCT EXTRACT(YEAR FROM fecha) as year FROM flights ORDER BY year DESC;" )
 
-# Visualization 2: Passenger Volume Trends Over Time
-st.header('Passenger Volume Trends Over Time')
-passenger_trends = df.groupby(df['fecha'].dt.to_period("M")).agg({'pasajeros': 'sum'}).reset_index()
-fig2 = px.line(passenger_trends, x='fecha', y='pasajeros', title='Monthly Passenger Volume Trends')
-st.plotly_chart(fig2)
 
-# Visualization 3: Comparison of Flight Volume by Type of Flight
-st.header('Comparison of Flight Volume by Type of Flight')
-flight_type_comparison = df_pl.groupby('tipovuelo').agg(
-    pl.count().alias('Flight Count')
-).to_pandas()
-fig3 = px.pie(flight_type_comparison, names='tipovuelo', values='Flight Count', title='Flight Volume by Type')
-st.plotly_chart(fig3)
+### App Setup
+st.header("Dashboard Trafico Aereo Colombia")
+year = st.sidebar.selectbox(label="año", options=query_anhos)
 
-# Ensure to add installation instructions and setup for required libraries and Streamlit in your documentation.
+query_aerolineas = fetch_query(conn,f"SELECT DISTINCT nombre_empresa FROM flights WHERE EXTRACT(YEAR FROM fecha) = '{year}' ORDER BY nombre_empresa;" )
+query_total_passengers = fetch_query(conn, f"SELECT SUM(pasajeros) as total_passengers FROM flights  WHERE EXTRACT(YEAR FROM fecha) = '{year}';")
+query_top_aerolineas =  fetch_query(conn,f"SELECT nombre_empresa, SUM(pasajeros) as volumen FROM flights WHERE EXTRACT(YEAR FROM fecha)= '{year}' GROUP BY nombre_empresa ORDER BY volumen DESC;" )
+query_tipo_vuelo = fetch_query(conn,f"SELECT tipovuelo, SUM(pasajeros) as volumen FROM flights WHERE EXTRACT(YEAR FROM fecha)= '{year}' GROUP BY tipovuelo ORDER BY volumen DESC;")
+query_trafico = fetch_query(conn,f"SELECT trafico, SUM(pasajeros) as volumen FROM flights WHERE EXTRACT(YEAR FROM fecha)= '{year}' GROUP BY trafico ORDER BY volumen DESC;")
+
+aerolineas_mercado = len(query_aerolineas)
+total_pasajeros = query_total_passengers.values
+top10_aerolineas = query_top_aerolineas.head(10).sort_values("volumen")
+top10_aerolineas["pct"] = np.round((100*(top10_aerolineas["volumen"] /int(total_pasajeros))),1).astype("str") +"%"
+tipo_vuelo = query_tipo_vuelo
+tipo_vuelo["tipovuelo"] = tipo_vuelo["tipovuelo"].replace({"R":"Regular", "A":"Vuelos Adicionales","C":"Chárter","T":"Taxi Aéreo"})
+tipo_vuelo["pct_volumen"] = np.round(100*(tipo_vuelo["volumen"] / tipo_vuelo["volumen"].sum()),2)
+tipo_vuelo["pct_volumen"] = tipo_vuelo["pct_volumen"].astype("str") + "%"
+trafico= query_trafico
+trafico["trafico"] = trafico["trafico"].replace({"N":"Nacional","I":"Internacional","E":"Externo"})
+trafico["pct"] = np.round((100*(trafico["volumen"] /int(total_pasajeros))),1).astype("str") +"%"
+#aerolinea = st.sidebar.multiselect(label="aerolinea", options=query_aerolineas)
+
+#filtrar = st.sidebar.button(label="Filtrar", type="primary")
+c1,c2 = st.columns(2)
+with c1:
+    st.metric(label="Total aerolineas en el mercado", value=aerolineas_mercado)
+with c2:
+    st.metric(label="Total pasajeros movilizados", value=millify(total_pasajeros, precision=3))
+
+#Figures
+fig_top10 = px.bar(top10_aerolineas, y='nombre_empresa', x='volumen', text='pct',
+             labels={'volumen': 'Cantidad pasajeros'},
+             title='Volumen de pasajeros por Aerolínea')
+# Customizing text on the bars to include pct_volumen
+fig_top10.update_traces(texttemplate='%{x:.3s}<br>%{text}', textposition='outside')
+fig_top10.update_layout(uniformtext_minsize=8, uniformtext_mode='hide', yaxis_tickformat=',')
+st.plotly_chart(fig_top10)
+
+col1, col2 = st.columns(2)
+with col1:
+    fig = px.bar(tipo_vuelo, x='tipovuelo', y='volumen', text='pct_volumen',
+                labels={'volumen': 'Cantidad pasajeros'},
+                title='Volumen de pasajeros por tipo de vuelo')
+    # Customizing text on the bars to include pct_volumen
+    fig.update_traces(texttemplate='%{y:.3s}<br>%{text}', textposition='outside')
+    fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide', yaxis_tickformat=',')
+    st.plotly_chart(fig)
+
+with col2:
+    fig_trafico = px.pie(trafico, names='trafico', values='volumen',
+                title='Volumen de pasajeros por tipo de tráfico')
+    # Customizing text on the bars to include pct_volumen
+    fig_trafico.update_traces(textinfo ="label+percent", hoverinfo='label+value+percent')
+    fig_trafico.update_layout(legend_title_text='Tipo de Tráfico aéreo')
+    st.plotly_chart(fig_trafico)
+
