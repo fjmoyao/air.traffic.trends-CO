@@ -41,4 +41,4 @@ After running both scripts, you should end with the processed data on your disk 
 
 The visualizations and data exploration was done using [Sigma](https://help.sigmacomputing.com/) a web-based data exploration and data visualization tool. Explore the visualizations and further analysis by accessing this [interactive dashboard](https://app.sigmacomputing.com/embed/1-4vxWhoJyQAEZrnypLXpIul?:nodeId=x5IFw14Sfe), or dive into the data with your preferred data analysis tools.
 
-![Dashboard preview](images\dashboard_sigma.png)
+![Dashboard preview](images/dashboard_sigma.png)
